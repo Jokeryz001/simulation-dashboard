@@ -270,12 +270,75 @@ const tasks = baseTasks * trendFactor * weekendFactor * (1 + volatility);
   - API集成指南.md（第二期对接说明）
   - config.example.js（配置示例）
 
+- **项目仓库** (2026-03-08)
+  - 已推送到 GitHub: https://github.com/Jokeryz001/simulation-dashboard
+  - SSH 密钥配置完成 (id_ed25519_github)
+  - 本地 HTTP 服务器配置 (python3 -m http.server 8080)
+
 ### 正在进行 🚧
 
-- **第二期：API集成准备**
-  - 等待获取平台认证信息
-  - 确认后端接口（使用现有 or 新增统计接口）
-  - 准备对接真实数据
+- **第二期：API集成** (2026-03-08 更新)
+
+  **当前配置：**
+  ```javascript
+  const CONFIG = {
+    useMockData: false,           // ✅ 已切换到真实API
+    apiBaseUrl: 'https://pgsim.phigent.net',
+    apiToken: 'eyJhbGci...',       // ✅ 已配置
+    apiPath: '/apiv2/sim/unity/task/listTaskByPage',
+
+    // 团队维度从"飞书部门"改为"功能模式"
+    teams: [
+      { id: 'Driving', name: '行车', color: '#2563eb' },
+      { id: 'APA', name: '泊车', color: '#10b981' },
+      { id: 'ActiveSafety', name: '主动安全', color: '#f59e0b' }
+    ]
+  };
+  ```
+
+  **调试状态：**
+  - ✅ API 连接成功（需要 VPN）
+  - ✅ 能够获取数据（pageSize: 5000）
+  - ✅ 数据展示正常（2026-03-07 到 2026-03-08）
+  - ❌ **发现分页 Bug**（见下方）
+
+---
+
+## 🚨 重要发现：API 分页 Bug (2026-03-08)
+
+### Bug 详情
+
+**接口：** `/apiv2/sim/unity/task/listTaskByPage`
+
+**问题：** `current` 参数无效，每页都返回相同数据
+
+**测试记录：**
+```
+请求参数                            返回结果
+─────────────────────────────────────────────────
+{ current: 1, pageSize: 100 }  → 100条 (simTaskId: 149924 ~ 149825)
+{ current: 2, pageSize: 100 }  → 100条 (simTaskId: 149924 ~ 149825) ❌ 重复
+{ current: 3, pageSize: 100 }  → 100条 (simTaskId: 149924 ~ 149825) ❌ 重复
+...共5页，全部相同数据
+```
+
+**API 显示：** total: 49,490 条任务
+**实际获取：** 去重后只有 100 条唯一数据
+
+### 临时解决方案
+
+**使用大 pageSize 一次获取更多数据：**
+```javascript
+const pageSize = 5000;  // 当前配置
+```
+
+### 依赖研发修复
+
+**需要反馈给后端团队：**
+> API 分页参数 `current` 没有生效，每次请求都返回第一页数据。
+> 请修复分页逻辑，使 `current` 参数能正确控制返回第几页。
+
+---
 
 ### 为什么要做API集成？
 
@@ -298,11 +361,22 @@ const tasks = baseTasks * trendFactor * weekendFactor * (1 + volatility);
 
 ## 下一步计划
 
-1. **获取认证信息** - 从测试环境获取Token和API地址
-2. **确认接口方案** - 使用现有接口 or 后端新增统计接口
-3. **修改配置对接** - 把`useMockData`改为`false`
-4. **测试验证** - 确保真实数据正常显示
-5. **错误处理** - 添加降级策略，API失败时显示友好提示
+### 待研发团队处理
+1. **修复 API 分页 Bug** - 让 `current` 参数正确工作
+2. **确认 API 返回数据总量** - 验证 49,490 条数据的准确性
+
+### 待继续开发（下周API修复后）
+1. **恢复分页循环** - 移除 `maxPages` 限制，实现真正的分页获取
+2. **优化数据量配置** - 根据 API 性能调整合适的 pageSize
+3. **扩展日期范围** - 尝试获取更长时间段的历史数据
+4. **添加错误处理** - API 失败时的降级策略和友好提示
+5. **清理调试代码** - 移除调试日志，优化代码结构
+
+### 未来功能规划
+- 数据导出功能（CSV/Excel）
+- 团队对比分析
+- 数据预警功能
+- 更多图表类型（柱状图、饼图等）
 
 ---
 
@@ -338,4 +412,5 @@ const tasks = baseTasks * trendFactor * weekendFactor * (1 + volatility);
 ---
 
 *文档创建日期：2026-03-07*
-*项目状态：第一期完成，第二期准备中*
+*最后更新：2026-03-08*
+*项目状态：第二期进行中，等待API分页Bug修复*

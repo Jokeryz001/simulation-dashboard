@@ -487,12 +487,12 @@
     // 分页获取所有任务数据并按日期和功能模式统计
     async function fetchTaskDataWithPagination(startDate, endDate) {
       const result = {};
-      const pageSize = 500; // 增加每页数量，尝试获取更多历史数据
+      const pageSize = 100; // 调试模式：小页面，加载更快
       let current = 1;
       let hasMore = true;
       let totalTasks = 0;
       let apiTotal = 0; // API返回的总任务数
-      const maxPages = 1; // 由于API分页有bug，只获取第一页
+      const maxPages = 5; // 调试：尝试获取多页数据
       const seenTaskIds = new Set(); // 用于去重任务ID
 
       console.log('='.repeat(50));
@@ -544,8 +544,10 @@
         apiTotal = apiResult.result?.total || 0; // API返回的总任务数
 
         console.log(`[DEBUG] 第 ${current} 页获取到 ${tasks.length} 个任务`);
+        console.log(`[DEBUG] API返回的total: ${apiTotal}`);
         if (tasks.length > 0) {
           console.log(`[DEBUG] 第一个任务:`, JSON.stringify(tasks[0]));
+          console.log(`[DEBUG] 最后一个任务:`, JSON.stringify(tasks[tasks.length - 1]));
         }
 
         // 处理每条任务数据
@@ -559,21 +561,17 @@
 
           const createTime = task.createTime;
           if (!createTime) {
-            console.warn(`[WARN] 任务 ${taskId} 没有createTime`);
             return;
           }
 
           const taskDate = createTime.split(' ')[0]; // 格式: "2026-03-07 11:21:58"
-          console.log(`[DEBUG] 任务 ${taskId} 日期: ${taskDate}, functionMode: ${task.functionMode}`);
 
           // 使用字符串比较检查日期是否在范围内
           if (taskDate < startDateStr || taskDate > endDateStr) {
-            console.log(`[DEBUG] 任务 ${taskId} 日期 ${taskDate} 不在范围 ${startDateStr} - ${endDateStr} 内，跳过`);
             return;
           }
 
           const functionMode = task.functionMode || 'Unknown';
-          console.log(`[DEBUG] 任务 ${taskId} functionMode: ${functionMode}, createUserName: ${task.createUserName}`);
 
           if (!result[taskDate]) {
             result[taskDate] = {};
@@ -592,8 +590,22 @@
 
         totalTasks = seenTaskIds.size;
 
-        // 由于API分页bug，不再检查hasMore，只获取固定的页数
-        hasMore = current < maxPages;
+        // 检查是否还有更多页
+        const hasMoreData = tasks.length === pageSize;
+        const reachedMaxPages = current >= maxPages;
+
+        console.log(`[DEBUG] 第 ${current} 页完成: hasMoreData=${hasMoreData}, reachedMaxPages=${reachedMaxPages}`);
+
+        // 如果获取的数据少于pageSize，说明没有更多数据了
+        if (!hasMoreData) {
+          console.log(`[DEBUG] 获取的数据量(${tasks.length})少于pageSize(${pageSize})，已是最后一页`);
+          hasMore = false;
+        } else if (reachedMaxPages) {
+          console.log(`[DEBUG] 已达到最大页数限制(${maxPages}页)`);
+          hasMore = false;
+        } else {
+          hasMore = true;
+        }
 
         current++;
       }
@@ -607,8 +619,7 @@
 
       console.log(`[DEBUG] 获取完成: ${Object.keys(result).length} 天的数据，共 ${seenTaskIds.size} 个唯一任务`);
       console.log('[DEBUG] 数据日期范围:', Object.keys(result).sort());
-      console.log('[DEBUG] 详细数据:', JSON.stringify(result, null, 2));
-      console.log(`[DEBUG] 提示：平台显示总任务数 ${apiTotal}，由于API分页问题，当前仅显示部分数据`);
+      console.log(`[DEBUG] API显示总任务数: ${apiTotal}`);
       console.log('='.repeat(50));
       return result;
     }
