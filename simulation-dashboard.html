@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仿真平台数据看板</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #334155;
+      line-height: 1.65;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 32px 40px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .controls-section {
+      padding: 24px 40px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .date-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-input {
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      transition: all 0.2s;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .apply-btn {
+      padding: 8px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .apply-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .apply-btn:active {
+      transform: translateY(0);
+    }
+
+    .data-source-badge {
+      margin-left: auto;
+      padding: 6px 12px;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #92400e;
+      font-weight: 500;
+    }
+
+    .data-source-badge.production {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 24px;
+      padding: 32px 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      flex: 1;
+      min-width: 200px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s;
+    }
+
+    .stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+      gap: 24px;
+      padding: 0 40px 32px;
+    }
+
+    .chart-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-title::before {
+      content: '';
+      width: 4px;
+      height: 18px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+
+    .line-chart-container {
+      position: relative;
+      height: 300px;
+      margin-top: 16px;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .loading-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      min-width: 180px;
+    }
+
+    .tooltip.show {
+      opacity: 1;
+    }
+
+    .tooltip-date {
+      font-weight: 600;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .tooltip-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tooltip-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tooltip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    @media (max-width: 768px) {
+      .container { border-radius: 0; }
+      .header, .controls-section, .stats-row, .charts-row { padding: 20px; }
+      .charts-row { grid-template-columns: 1fr; }
+      .stat { min-width: 100%; }
+      .controls-section { flex-direction: column; align-items: stretch; }
+      .data-source-badge { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>仿真平台数据看板</h1>
+      <p class="subtitle">自动驾驶仿真平台 · 团队使用监控</p>
+    </div>
+
+    <div class="controls-section">
+      <div class="date-input-group">
+        <label for="start-date" style="font-size: 14px; color: #64748b;">起始日期:</label>
+        <input type="date" id="start-date" class="date-input">
+      </div>
+      <div class="date-input-group">
+        <label for="end-date" style="font-size: 14px; color: #64748b;">结束日期:</label>
+        <input type="date" id="end-date" class="date-input">
+      </div>
+      <button id="apply-btn" class="apply-btn">应用筛选</button>
+      <div class="data-source-badge" id="data-source">当前数据源：模拟数据</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-value" id="total-tasks">0</div>
+        <div class="stat-label">总任务数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="total-users">0</div>
+        <div class="stat-label">活跃用户数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="active-teams">0</div>
+        <div class="stat-label">活跃团队数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="avg-tasks-per-day">0</div>
+        <div class="stat-label">日均任务数</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3 class="chart-title">任务发起数趋势（按功能模式）</h3>
+        <div class="line-chart-container" id="task-chart">
+          <svg id="task-chart-svg"></svg>
+        </div>
+        <div class="chart-legend" id="task-legend"></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">使用人数趋势（按功能模式）</h3>
+        <div class="line-chart-container" id="user-chart">
+          <svg id="user-chart-svg"></svg>
+        </div>
+        <div class="chart-legend" id="user-legend"></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3 class="chart-title">任务发起数趋势（按项目）</h3>
+        <div class="line-chart-container" id="project-task-chart">
+          <svg id="project-task-chart-svg"></svg>
+        </div>
+        <div class="chart-legend" id="project-task-legend"></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">使用人数趋势（按项目）</h3>
+        <div class="line-chart-container" id="project-user-chart">
+          <svg id="project-user-chart-svg"></svg>
+        </div>
+        <div class="chart-legend" id="project-user-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div class="tooltip" id="tooltip">
+    <div class="tooltip-date" id="tooltip-date"></div>
+    <div id="tooltip-content"></div>
+  </div>
+
+  <script>
+    // ========================================
+    // 配置区域 - 第二期集成真实API时修改这里
+    // ========================================
+    const CONFIG = {
+      useMockData: false,  // 使用真实API
+      apiBaseUrl: 'https://pgsim.phigent.net',
+      apiToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2OTc0LCJ1aWQiOiJ2cGptbGawMyIsInVzZXJuYW1lIjoieWl6aGkud2FuZyIsIm5pY2siOiLnjovoibrmmboiLCJyb2xlcyI6WzYsMTQsMTgsMzIsNTEsNjIsNjQsNjVdLCJleHAiOjE3NzU0NDUzMzYsImlzcyI6ImF1dGgtYXBpIiwiZXhwIjoxNzczMjg1MzM2LCJpYXQiOjE3NzI4NTMzMzZ9.NLODtDjFzf6TzPG8d3jsQxn67lgrIAkYit1OwWudERM',  // 平台认证Token
+
+      // 功能模式配置（代替飞书部门）
+      teams: [
+        { id: 'Driving', name: '行车', color: '#2563eb' },
+        { id: 'APA', name: '泊车', color: '#10b981' },
+        { id: 'ActiveSafety', name: '主动安全', color: '#f59e0b' }
+      ],
+
+      // 项目配置
+      projects: [
+        { id: 'CHERY_T1G', name: '奇瑞T1G', color: '#ef4444' },
+        { id: 'GAC_Toyota_J6B', name: '广汽丰田J6B', color: '#8b5cf6' },
+        { id: 'SAIC_J6B', name: '上汽J6B', color: '#06b6d4' }
+      ],
+
+      // API配置
+      apiPath: '/apiv2/sim/unity/task/listTaskByPage',
+      apiAuthType: 'token'  // 使用 'token' 而不是 'Bearer'
+    };
+
+    // ========================================
+    // 工具函数
+    // ========================================
+    function getDatesInRange(startDate, endDate) {
+      const dates = [];
+      let currentDate = new Date(startDate);
+      const end = new Date(endDate);
+
+      while (currentDate <= end) {
+        dates.push(formatDate(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      return dates;
+    }
+
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function parseDate(dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function simulateDelay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ========================================
+    // 模拟数据生成器
+    // ========================================
+    function generateMockData(startDate, endDate) {
+      const data = {};
+      const dates = getDatesInRange(startDate, endDate);
+
+      // 为每个团队生成基准值和趋势
+      const teamConfigs = {
+        perception: { baseTasks: 150, baseUsers: 25, trend: 0.02, volatility: 0.15 },
+        planning: { baseTasks: 90, baseUsers: 15, trend: 0.015, volatility: 0.12 },
+        simulation: { baseTasks: 70, baseUsers: 12, trend: 0.01, volatility: 0.1 },
+        data: { baseTasks: 80, baseUsers: 18, trend: 0.018, volatility: 0.14 },
+        testing: { baseTasks: 60, baseUsers: 10, trend: 0.008, volatility: 0.11 },
+        mapping: { baseTasks: 50, baseUsers: 8, trend: 0.012, volatility: 0.09 },
+        integration: { baseTasks: 40, baseUsers: 6, trend: 0.005, volatility: 0.08 }
+      };
+
+      dates.forEach((date, index) => {
+        data[date] = {};
+
+        CONFIG.teams.forEach(team => {
+          const config = teamConfigs[team.id];
+          if (!config) return;
+
+          // 计算趋势（工作日通常更高）
+          const dateObj = parseDate(date);
+          const dayOfWeek = dateObj.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          const weekendFactor = isWeekend ? 0.3 : 1;
+
+          // 添加趋势和随机波动
+          const trendFactor = 1 + (config.trend * index) + (Math.random() * config.volatility - config.volatility / 2);
+
+          data[date][team.id] = {
+            tasks: Math.round(config.baseTasks * trendFactor * weekendFactor),
+            users: Math.round(config.baseUsers * trendFactor * weekendFactor)
+          };
+        });
+      });
+
+      return data;
+    }
+
+    // ========================================
+    // 数据获取接口 - 第二期替换实现
+    // ========================================
+    async function fetchDashboardData(startDate, endDate) {
+      if (CONFIG.useMockData) {
+        // 第一期：使用模拟数据
+        await simulateDelay(300);
+        return generateMockData(startDate, endDate);
+      } else {
+        // 第二期：调用真实API - 获取任务列表并按功能模式统计
+        try {
+          const data = await fetchTaskDataWithPagination(startDate, endDate);
+          return data;
+        } catch (error) {
+          console.error('获取数据失败:', error);
+          // 降级到模拟数据
+          return generateMockData(startDate, endDate);
+        }
+      }
+    }
+
+    // 分页获取所有任务数据并按日期统计（按功能模式和按项目）
+    async function fetchTaskDataWithPagination(startDate, endDate) {
+      const resultByMode = {};  // 按功能模式分组
+      const resultByProject = {}; // 按项目分组
+      const pageSize = 100;
+      let pageNo = 1;
+      let hasMore = true;
+      const seenTaskIds = new Set(); // 用于去重任务ID
+      let earliestTime = null; // 记录最早的任务时间
+      let latestTime = null; // 记录最晚的任务时间
+
+      console.log('='.repeat(50));
+      console.log(`[DEBUG] 开始获取数据: ${startDate} 到 ${endDate}`);
+      console.log(`[DEBUG] API URL: ${CONFIG.apiBaseUrl}${CONFIG.apiPath}`);
+
+      const startDateStr = startDate;
+      const endDateStr = endDate;
+      const startDateTime = `${startDate} 00:00:00`;
+      const endDateTime = `${endDate} 23:59:59`;
+
+      while (hasMore) {
+        console.log(`[DEBUG] 正在获取第 ${pageNo} 页...`);
+
+        const requestBody = {
+          pageNo: pageNo,
+          pageSize: pageSize,
+          startCreateTime: startDateTime,
+          endCreateTime: endDateTime
+        };
+
+        console.log(`[DEBUG] 第 ${pageNo} 页请求参数:`, JSON.stringify(requestBody));
+
+        const response = await fetch(`${CONFIG.apiBaseUrl}${CONFIG.apiPath}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            [CONFIG.apiAuthType]: CONFIG.apiToken
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        console.log(`[DEBUG] 第 ${pageNo} 页响应状态: ${response.status}`);
+
+        if (!response.ok) {
+          console.error(`[ERROR] API请求失败: ${response.status}`);
+          throw new Error(`API请求失败: ${response.status}`);
+        }
+
+        const apiResult = await response.json();
+
+        if (apiResult.status !== 200) {
+          console.error(`[ERROR] API返回错误:`, apiResult);
+          throw new Error(`API返回错误: ${apiResult.message}`);
+        }
+
+        const tasks = apiResult.result?.data || [];
+        const apiTotal = apiResult.result?.total || 0;
+
+        console.log(`[DEBUG] 第 ${pageNo} 页获取到 ${tasks.length} 个任务，total: ${apiTotal}`);
+        if (tasks.length > 0) {
+          console.log(`[DEBUG] 第一个任务 createTime: ${tasks[0].createTime}`);
+          console.log(`[DEBUG] 最后一个任务 createTime: ${tasks[tasks.length - 1].createTime}`);
+        }
+
+        // 处理每条任务数据
+        tasks.forEach(task => {
+          const taskId = task.simTaskId;
+          if (seenTaskIds.has(taskId)) {
+            return;
+          }
+          seenTaskIds.add(taskId);
+
+          const createTime = task.createTime;
+          if (!createTime) {
+            return;
+          }
+
+          if (!earliestTime || createTime < earliestTime) earliestTime = createTime;
+          if (!latestTime || createTime > latestTime) latestTime = createTime;
+
+          const taskDate = createTime.split(' ')[0];
+
+          if (taskDate < startDateStr || taskDate > endDateStr) {
+            return;
+          }
+
+          const functionMode = task.functionMode || 'Unknown';
+          const projectType = task.projectType || 'Unknown';
+
+          // 按功能模式分组
+          if (!resultByMode[taskDate]) {
+            resultByMode[taskDate] = {};
+          }
+          if (!resultByMode[taskDate][functionMode]) {
+            resultByMode[taskDate][functionMode] = { tasks: 0, users: new Set() };
+          }
+          resultByMode[taskDate][functionMode].tasks += 1;
+          if (task.createUserName) {
+            resultByMode[taskDate][functionMode].users.add(task.createUserName);
+          }
+
+          // 按项目分组
+          if (!resultByProject[taskDate]) {
+            resultByProject[taskDate] = {};
+          }
+          if (!resultByProject[taskDate][projectType]) {
+            resultByProject[taskDate][projectType] = { tasks: 0, users: new Set() };
+          }
+          resultByProject[taskDate][projectType].tasks += 1;
+          if (task.createUserName) {
+            resultByProject[taskDate][projectType].users.add(task.createUserName);
+          }
+        });
+
+        // 检查是否还有更多页
+        if (tasks.length < pageSize) {
+          console.log(`[DEBUG] 获取的数据量(${tasks.length})少于pageSize，已是最后一页`);
+          hasMore = false;
+        } else {
+          pageNo++;
+        }
+      }
+
+      // 将Set转换为数字（按功能模式）
+      for (const date in resultByMode) {
+        for (const mode in resultByMode[date]) {
+          resultByMode[date][mode].users = resultByMode[date][mode].users.size;
+        }
+      }
+
+      // 将Set转换为数字（按项目）
+      for (const date in resultByProject) {
+        for (const project in resultByProject[date]) {
+          resultByProject[date][project].users = resultByProject[date][project].users.size;
+        }
+      }
+
+      console.log(`[DEBUG] 获取完成: ${Object.keys(resultByMode).length} 天的数据，共 ${seenTaskIds.size} 个唯一任务`);
+      console.log('[DEBUG] 数据日期范围:', Object.keys(resultByMode).sort());
+      console.log(`[DEBUG] API原始时间范围: ${earliestTime} ~ ${latestTime}`);
+      console.log('='.repeat(50));
+
+      return {
+        byMode: resultByMode,
+        byProject: resultByProject
+      };
+    }
+
+    // ========================================
+    // 数据处理
+    // ========================================
+    function filterDataByDateRange(data, startDate, endDate) {
+      const result = {};
+      for (const [date, dayData] of Object.entries(data)) {
+        if (date >= startDate && date <= endDate) {
+          result[date] = dayData;
+        }
+      }
+      return result;
+    }
+
+    function calculateStatistics(data) {
+      let totalTasks = 0;
+      let totalUsers = 0;
+      let activeTeams = 0;
+      const teamStats = {};
+
+      CONFIG.teams.forEach(team => {
+        teamStats[team.id] = { tasks: 0, users: 0 };
+      });
+
+      Object.values(data).forEach(dayData => {
+        Object.entries(dayData).forEach(([teamId, metrics]) => {
+          if (teamStats[teamId]) {
+            teamStats[teamId].tasks += metrics.tasks;
+            teamStats[teamId].users += metrics.users;
+          }
+        });
+      });
+
+      Object.entries(teamStats).forEach(([teamId, stats]) => {
+        if (stats.tasks > 0) {
+          totalTasks += stats.tasks;
+          totalUsers += stats.users;
+          activeTeams++;
+        }
+      });
+
+      const days = Object.keys(data).length || 1;
+
+      return {
+        totalTasks,
+        totalUsers,
+        activeTeams,
+        avgTasksPerDay: Math.round(totalTasks / days),
+        teamStats
+      };
+    }
+
+    // ========================================
+    // SVG 图表引擎
+    // ========================================
+    function createLineChart(containerId, data, metric, groups) {
+      console.log(`[CHART] createLineChart 开始: ${containerId}, metric: ${metric}`);
+      const container = document.getElementById(containerId);
+      const svg = document.getElementById(containerId + '-svg');
+      if (!container || !svg) {
+        console.error(`[CHART] 找不到容器或SVG: ${containerId}`);
+        return;
+      }
+
+      // 清空现有内容
+      svg.innerHTML = '';
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', '100%');
+      svg.style.display = 'block';
+
+      const rect = container.getBoundingClientRect();
+      const width = rect.width || 700;
+      const height = rect.height || 300;
+      const padding = { top: 20, right: 30, bottom: 40, left: 50 };
+
+      // 计算数据范围
+      const dates = Object.keys(data).sort();
+      console.log(`[CHART] ${containerId} 日期范围:`, dates);
+      if (dates.length === 0) {
+        console.warn(`[CHART] ${containerId} 没有数据`);
+        // 显示"暂无数据"提示
+        const ns = 'http://www.w3.org/2000/svg';
+        const text = document.createElementNS(ns, 'text');
+        text.setAttribute('x', width / 2);
+        text.setAttribute('y', height / 2);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '14');
+        text.setAttribute('fill', '#94a3b8');
+        text.textContent = '暂无数据';
+        svg.appendChild(text);
+        return;
+      }
+
+      const allValues = [];
+      groups.forEach(group => {
+        dates.forEach(date => {
+          if (data[date] && data[date][group.id]) {
+            allValues.push(data[date][group.id][metric] || 0);
+          }
+        });
+      });
+
+      const maxValue = Math.max(...allValues, 1) * 1.1; // 留10%顶部空间
+
+      // 创建命名空间
+      const ns = 'http://www.w3.org/2000/svg';
+
+      // 单点数据提示
+      if (dates.length === 1) {
+        const text = document.createElementNS(ns, 'text');
+        text.setAttribute('x', width / 2);
+        text.setAttribute('y', height - 10);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '11');
+        text.setAttribute('fill', '#94a3b8');
+        text.textContent = '提示: 选择更长时间范围查看趋势';
+        svg.appendChild(text);
+      }
+
+      // 绘制网格线
+      const gridCount = 5;
+      for (let i = 0; i <= gridCount; i++) {
+        const y = padding.top + (height - padding.top - padding.bottom) * i / gridCount;
+        const value = Math.round(maxValue * (1 - i / gridCount));
+
+        // 网格线
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', padding.left);
+        line.setAttribute('y1', y);
+        line.setAttribute('x2', width - padding.right);
+        line.setAttribute('y2', y);
+        line.setAttribute('stroke', '#e2e8f0');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-dasharray', '4,4');
+        svg.appendChild(line);
+
+        // Y轴标签
+        const text = document.createElementNS(ns, 'text');
+        text.setAttribute('x', padding.left - 10);
+        text.setAttribute('y', y + 4);
+        text.setAttribute('text-anchor', 'end');
+        text.setAttribute('font-size', '11');
+        text.setAttribute('fill', '#64748b');
+        text.textContent = value;
+        svg.appendChild(text);
+      }
+
+      // 绘制X轴标签（日期）
+      const xStep = (width - padding.left - padding.right) / (dates.length - 1 || 1);
+      const dateSkip = Math.max(1, Math.floor(dates.length / 8)); // 最多显示8个日期
+
+      console.log(`[CHART] ${containerId} 准备绘制X轴标签，日期数量: ${dates.length}, 跳过间隔: ${dateSkip}`);
+
+      dates.forEach((date, i) => {
+        if (i % dateSkip === 0 || i === dates.length - 1) {
+          const x = padding.left + i * xStep;
+          const dateObj = parseDate(date);
+          const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+          console.log(`[CHART] ${containerId} 绘制标签 [${i}]: ${date} -> ${label} at x=${x}`);
+
+          const text = document.createElementNS(ns, 'text');
+          text.setAttribute('x', x);
+          text.setAttribute('y', height - padding.bottom + 20);
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('font-size', '11');
+          text.setAttribute('fill', '#64748b');
+          text.textContent = label;
+          svg.appendChild(text);
+        }
+      });
+
+      // 为每个分组绘制折线和数据点
+      const lines = {};
+
+      groups.forEach(group => {
+        const points = [];
+        const values = [];
+
+        dates.forEach((date, i) => {
+          const x = padding.left + i * xStep;
+          const value = data[date] && data[date][group.id] ? data[date][group.id][metric] || 0 : 0;
+          const y = padding.top + (height - padding.top - padding.bottom) * (1 - value / maxValue);
+
+          points.push({ x, y, date, value });
+          values.push(value);
+        });
+
+        lines[group.id] = { points, values };
+      });
+
+      // 绘制折线
+      Object.entries(lines).forEach(([groupId, { points }]) => {
+        const group = groups.find(g => g.id === groupId);
+        if (!group) return;
+
+        // 只有多点时才绘制折线
+        if (points.length >= 2) {
+          const pathData = points.map((p, i) => {
+            if (i === 0) return `M ${p.x} ${p.y}`;
+            return `L ${p.x} ${p.y}`;
+          }).join(' ');
+
+          const path = document.createElementNS(ns, 'path');
+          path.setAttribute('d', pathData);
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', group.color);
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('stroke-linecap', 'round');
+          path.setAttribute('stroke-linejoin', 'round');
+          path.setAttribute('opacity', '0.8');
+          svg.appendChild(path);
+        }
+
+        // 绘制数据点
+        points.forEach(p => {
+          const circle = document.createElementNS(ns, 'circle');
+          circle.setAttribute('cx', p.x);
+          circle.setAttribute('cy', p.y);
+          circle.setAttribute('r', '4');
+          circle.setAttribute('fill', group.color);
+          circle.setAttribute('stroke', 'white');
+          circle.setAttribute('stroke-width', '2');
+          circle.setAttribute('data-date', p.date);
+          circle.setAttribute('data-team', groupId);
+          circle.setAttribute('data-value', p.value);
+          circle.style.cursor = 'pointer';
+          circle.style.transition = 'r 0.2s';
+          svg.appendChild(circle);
+
+          // 悬浮效果
+          circle.addEventListener('mouseenter', (e) => {
+            circle.setAttribute('r', '6');
+            showTooltip(e, p.date, groupId, p.value, metric, groups);
+          });
+
+          circle.addEventListener('mouseleave', () => {
+            circle.setAttribute('r', '4');
+            hideTooltip();
+          });
+        });
+      });
+
+      // 添加图例
+      const legendId = containerId.replace('-chart', '-legend');
+      const legend = document.getElementById(legendId);
+      if (legend) {
+        legend.innerHTML = '';
+        groups.forEach(group => {
+          const item = document.createElement('div');
+          item.className = 'legend-item';
+          item.innerHTML = `
+            <div class="legend-color" style="background: ${group.color}"></div>
+            <span>${group.name}</span>
+          `;
+          legend.appendChild(item);
+        });
+      }
+    }
+
+    // ========================================
+    // 悬浮提示
+    // ========================================
+    function showTooltip(event, date, teamId, value, metric, groups) {
+      const tooltip = document.getElementById('tooltip');
+      const tooltipDate = document.getElementById('tooltip-date');
+      const tooltipContent = document.getElementById('tooltip-content');
+
+      const group = groups.find(g => g.id === teamId);
+      if (!group) return;
+
+      const dateObj = parseDate(date);
+      const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+      const metricLabel = metric === 'tasks' ? '任务数' : '用户数';
+
+      tooltipDate.textContent = formattedDate;
+      tooltipContent.innerHTML = `
+        <div class="tooltip-item">
+          <span class="tooltip-label">
+            <div class="tooltip-dot" style="background: ${group.color}"></div>
+            ${group.name}
+          </span>
+          <span>${value} ${metricLabel}</span>
+        </div>
+      `;
+
+      // 定位
+      const rect = event.target.getBoundingClientRect();
+      tooltip.style.left = rect.left + rect.width / 2 - 90 + 'px';
+      tooltip.style.top = rect.top - 100 + 'px';
+      tooltip.classList.add('show');
+    }
+
+    function hideTooltip() {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.classList.remove('show');
+    }
+
+    // ========================================
+    // UI 更新
+    // ========================================
+    function updateStatisticsCards(stats) {
+      const animateValue = (element, value, duration = 1000) => {
+        const start = 0;
+        const increment = value / (duration / 16);
+        let current = start;
+
+        const timer = setInterval(() => {
+          current += increment;
+          if (current >= value) {
+            element.textContent = value.toLocaleString();
+            clearInterval(timer);
+          } else {
+            element.textContent = Math.floor(current).toLocaleString();
+          }
+        }, 16);
+      };
+
+      animateValue(document.getElementById('total-tasks'), stats.totalTasks);
+      animateValue(document.getElementById('total-users'), stats.totalUsers);
+      animateValue(document.getElementById('active-teams'), stats.activeTeams);
+      animateValue(document.getElementById('avg-tasks-per-day'), stats.avgTasksPerDay);
+    }
+
+    function updateDataSourceBadge() {
+      const badge = document.getElementById('data-source');
+      if (CONFIG.useMockData) {
+        badge.textContent = '当前数据源：模拟数据';
+        badge.classList.remove('production');
+      } else {
+        badge.textContent = '当前数据源：生产环境';
+        badge.classList.add('production');
+      }
+    }
+
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.add('show');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('show');
+    }
+
+    function showError(message) {
+      alert('错误: ' + message);
+    }
+
+    // ========================================
+    // 日期处理
+    // ========================================
+    function setDefaultDateRange() {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 7); // 最近7天
+
+      document.getElementById('start-date').value = formatDate(start);
+      document.getElementById('end-date').value = formatDate(end);
+    }
+
+    // ========================================
+    // 主控逻辑
+    // ========================================
+    async function updateDashboard() {
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+
+      console.log('[DASHBOARD] updateDashboard 开始');
+      console.log('[DASHBOARD] startDate:', startDate, 'endDate:', endDate);
+
+      if (!startDate || !endDate) {
+        console.error('[DASHBOARD] 日期无效');
+        showError('请选择有效的日期范围');
+        return;
+      }
+
+      if (startDate > endDate) {
+        console.error('[DASHBOARD] 起始日期晚于结束日期');
+        showError('起始日期不能晚于结束日期');
+        return;
+      }
+
+      showLoading();
+      console.log('[DASHBOARD] Loading overlay 已显示');
+
+      try {
+        // 获取数据
+        console.log('[DASHBOARD] 开始获取数据...');
+        const rawData = await fetchDashboardData(startDate, endDate);
+        console.log('[DASHBOARD] rawData:', JSON.stringify(rawData, null, 2));
+
+        const dataByMode = rawData.byMode || {};
+        const dataByProject = rawData.byProject || {};
+
+        // 计算统计（使用功能模式数据）
+        const stats = calculateStatistics(dataByMode);
+        console.log('[DASHBOARD] stats:', stats);
+        updateStatisticsCards(stats);
+
+        // 更新图表 - 按功能模式
+        console.log('[DASHBOARD] 开始更新功能模式图表...');
+        createLineChart('task-chart', dataByMode, 'tasks', CONFIG.teams);
+        createLineChart('user-chart', dataByMode, 'users', CONFIG.teams);
+
+        // 更新图表 - 按项目
+        console.log('[DASHBOARD] 开始更新项目图表...');
+        createLineChart('project-task-chart', dataByProject, 'tasks', CONFIG.projects);
+        createLineChart('project-user-chart', dataByProject, 'users', CONFIG.projects);
+
+        // 更新数据来源标识
+        updateDataSourceBadge();
+
+        console.log('[DASHBOARD] updateDashboard 完成');
+      } catch (error) {
+        console.error('[DASHBOARD] 错误:', error);
+        console.error('[DASHBOARD] 错误堆栈:', error.stack);
+        showError('加载数据失败: ' + error.message);
+      } finally {
+        console.log('[DASHBOARD] 准备隐藏 loading');
+        hideLoading();
+        console.log('[DASHBOARD] Loading overlay 已隐藏');
+      }
+    }
+
+    // ========================================
+    // 初始化
+    // ========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      // 设置默认日期范围（最近7天）
+      setDefaultDateRange();
+
+      // 全局错误处理
+      window.addEventListener('error', (event) => {
+        console.error('[GLOBAL ERROR]', event.error);
+        hideLoading();
+      });
+
+      window.addEventListener('unhandledrejection', (event) => {
+        console.error('[UNHANDLED PROMISE REJECTION]', event.reason);
+        hideLoading();
+      });
+
+      // 绑定事件
+      document.getElementById('apply-btn').addEventListener('click', updateDashboard);
+
+      // 日期输入框变化时自动更新
+      document.getElementById('start-date').addEventListener('change', updateDashboard);
+      document.getElementById('end-date').addEventListener('change', updateDashboard);
+
+      // 初始加载
+      console.log('[INIT] 页面加载完成，开始初始化...');
+      updateDashboard();
+
+      // 窗口大小改变时重绘图表
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const startDate = document.getElementById('start-date').value;
+          const endDate = document.getElementById('end-date').value;
+          if (startDate && endDate) {
+            fetchDashboardData(startDate, endDate).then(data => {
+              const dataByMode = data.byMode || {};
+              const dataByProject = data.byProject || {};
+              createLineChart('task-chart', dataByMode, 'tasks', CONFIG.teams);
+              createLineChart('user-chart', dataByMode, 'users', CONFIG.teams);
+              createLineChart('project-task-chart', dataByProject, 'tasks', CONFIG.projects);
+              createLineChart('project-user-chart', dataByProject, 'users', CONFIG.projects);
+            });
+          }
+        }, 250);
+      });
+    });
+  </script>
+</body>
+</html>
